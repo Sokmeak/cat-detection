@@ -93,13 +93,17 @@ This project develops and evaluates a **single-class object detection system** f
 
 ## ✨ Features
 
-- **Automated Data Collection**: Script to download images from Open Images Dataset
+- **Automated Data Collection**: FiftyOne-based script to download images from Open Images Dataset
 - **Data Quality Analysis**: Tools to assess and improve image quality
-- **Image Enhancement**: Preprocessing pipeline for brightness and sharpness
-- **Model Training**: Support for YOLO and Faster R-CNN architectures
-- **Comprehensive Evaluation**: Multiple metrics and visualization tools
-- **Reproducible Results**: Seed management and configuration tracking
-- **Interactive Notebooks**: Jupyter notebooks for experimentation
+  - Label verification ([check_labels.py](scripts/check_labels.py))
+  - Invalid image detection ([find_invalid_images.py](scripts/find_invalid_images.py))
+  - Single image visualization ([visualize_single_image.py](scripts/visualize_single_image.py))
+- **Image Enhancement**: Preprocessing pipeline for brightness correction and sharpness ([enhance_images.py](scripts/enhance_images.py))
+- **YOLOv8 Training**: Complete training pipeline with configurable hyperparameters
+- **Comprehensive Evaluation**: Multiple metrics and visualization tools (mAP, precision, recall, confusion matrix)
+- **Virtual Environment**: Pre-configured Python environment with all dependencies
+- **Interactive Notebooks**: Jupyter notebook for experimentation and analysis
+- **Dual Dataset Support**: Train on original or enhanced datasets for comparison
 
 ---
 
@@ -107,69 +111,80 @@ This project develops and evaluates a **single-class object detection system** f
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.8 or higher (Python 3.14 used in this project)
 - Git
 - pip package manager
-- Virtual environment (recommended)
+- Virtual environment (already configured in this project)
 
-### Clone the Repository
+### Setup Instructions
+
+#### 1. Clone the Repository (if needed)
 
 ```bash
-# Clone the repository
 git clone https://github.com/YOUR_USERNAME/cat-detection.git
-
-# Navigate to the project directory
 cd cat-detection
 ```
 
-### Set Up Virtual Environment
+#### 2. Activate Virtual Environment
 
-#### On macOS/Linux:
+This project already has a configured virtual environment. Simply activate it:
+
+##### On macOS/Linux:
 
 ```bash
-# Create virtual environment
-python3 -m venv cat-detection
-
-# Activate virtual environment
-source cat-detection/bin/activate
+# From the cat-detection directory
+source bin/activate
 ```
 
-#### On Windows:
+##### On Windows:
 
 ```bash
-# Create virtual environment
-python -m venv cat-detection
-
-# Activate virtual environment
-cat-detection\Scripts\activate
+# From the cat-detection directory
+Scripts\activate
 ```
 
-### Install Dependencies
+#### 3. Verify Installation
+
+The virtual environment already has all dependencies installed. Verify with:
 
 ```bash
-# Upgrade pip
+# Check Python version
+python --version  # Should show Python 3.14
+
+# Check installed packages
+pip list
+
+# Verify YOLO is installed
+yolo version
+```
+
+### Key Installed Tools
+
+The project includes:
+
+- **Ultralytics YOLOv8**: Object detection framework
+- **FiftyOne**: Dataset management and visualization
+- **Jupyter**: Interactive notebooks
+- **PyTorch**: Deep learning framework
+- **OpenCV**: Computer vision library
+- **Additional tools**: See [requirements.txt](requirements.txt)
+
+### Fresh Installation (Optional)
+
+If you need to set up a new environment:
+
+```bash
+# Create new virtual environment
+python3 -m venv cat-detection-env
+
+# Activate it
+source cat-detection-env/bin/activate  # macOS/Linux
+# or
+cat-detection-env\Scripts\activate  # Windows
+
+# Install dependencies
 pip install --upgrade pip
-
-# Install required packages
 pip install -r requirements.txt
-```
-
-### Install FiftyOne (for dataset management)
-
-```bash
-pip install fiftyone
-```
-
-### Additional Dependencies
-
-For GPU acceleration (recommended for training):
-
-```bash
-# For PyTorch with CUDA support
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-# For TensorFlow with GPU support
-pip install tensorflow-gpu
 ```
 
 ---
@@ -179,14 +194,15 @@ pip install tensorflow-gpu
 ### 1. Download Dataset
 
 ```bash
-# Run the download script
-python download.py --class cat --train 1500 --val 300 --test 300
-
-# Or use FiftyOne for interactive dataset exploration
-fiftyone app launch
+# Run the export script from FiftyOne
+python scripts/export_from_fiftyone.py
 ```
 
+This will download the Open Images dataset and organize it into the appropriate structure.
+
 ### 2. Data Preprocessing
+
+#### Option A: Interactive Notebook (Recommended)
 
 Open the Jupyter notebook:
 
@@ -201,34 +217,58 @@ Run the preprocessing cells to:
 - Analyze image quality
 - Apply enhancements
 
+#### Option B: Command Line Scripts
+
+```bash
+# Check labels and annotations
+python scripts/check_labels.py
+
+# Find invalid images
+python scripts/find_invalid_images.py
+
+# Enhance images (brightness correction and sharpening)
+python scripts/enhance_images.py
+
+# Visualize specific image with annotations
+python scripts/visualize_single_image.py
+```
+
 ### 3. Train Model
 
 ```bash
-# Train YOLO model (example)
-python train.py --model yolo --epochs 100 --batch-size 16
+# Navigate to cat-detection directory
+cd cat-detection
 
-# Train with enhanced dataset
-python train.py --model yolo --epochs 100 --batch-size 16 --enhanced
+# Train YOLO model on original dataset
+python training/train_yolo.py --data-dir ./data/original --epochs 100 --batch-size 16
+
+# Train on enhanced dataset
+python training/train_yolo.py --data-dir ./data/enhanced --epochs 100 --batch-size 16
 ```
+
+For detailed training instructions, see [HOW_TO_TRAIN.md](HOW_TO_TRAIN.md).
 
 ### 4. Evaluate Model
 
 ```bash
-# Evaluate on test set
-python evaluate.py --model-path weights/best.pt --dataset test
+# Evaluate using YOLOv8 validation
+yolo val model=weights/best.pt data=data.yaml
 
-# Generate performance report
-python evaluate.py --model-path weights/best.pt --dataset test --report
+# Or use the trained model for validation
+yolo val model=runs/train/cat_detection/weights/best.pt data=data.yaml
 ```
 
 ### 5. Run Inference
 
 ```bash
 # Detect cats in new images
-python detect.py --model-path weights/best.pt --source path/to/images
+yolo predict model=weights/best.pt source=path/to/images
 
 # Run on webcam
-python detect.py --model-path weights/best.pt --source 0
+yolo predict model=weights/best.pt source=0
+
+# Run on video
+yolo predict model=weights/best.pt source=path/to/video.mp4
 ```
 
 ---
@@ -249,15 +289,26 @@ python detect.py --model-path weights/best.pt --source 0
 
 ```
 data/
-├── train/
-│   ├── images/
-│   └── labels/
-├── val/
-│   ├── images/
-│   └── labels/
-└── test/
-    ├── images/
-    └── labels/
+├── original/              # Original dataset
+│   ├── train/
+│   │   ├── images/       # 1502 training images
+│   │   └── labels/       # 1502 training labels
+│   ├── val/
+│   │   ├── images/       # 300 validation images
+│   │   └── labels/       # 300 validation labels
+│   └── test/
+│       ├── images/       # 300 test images
+│       └── labels/       # 300 test labels
+└── enhanced/             # Enhanced dataset (preprocessed)
+    ├── train/
+    │   ├── images/
+    │   └── labels/
+    ├── val/
+    │   ├── images/
+    │   └── labels/
+    └── test/
+        ├── images/
+        └── labels/
 ```
 
 ### Annotation Format
@@ -274,27 +325,41 @@ All values are normalized to [0, 1].
 
 ## 🏗️ Model Architecture
 
-### Supported Models
+### Primary Model: YOLOv8
 
-1. **YOLOv8** (Recommended)
+This project uses **YOLOv8** (You Only Look Once version 8) from Ultralytics.
 
-   - Fast inference speed
-   - High accuracy
-   - Easy to train and deploy
+**Why YOLOv8?**
 
-2. **Faster R-CNN**
-   - High accuracy
-   - Better for small objects
-   - Slower inference
+- **Fast inference speed**: Real-time detection capability
+- **High accuracy**: State-of-the-art performance on object detection
+- **Easy to train and deploy**: Simple API and CLI interface
+- **Well-documented**: Extensive documentation and community support
+- **Active development**: Regular updates and improvements
 
 ### Model Configuration
 
-- **Input Size**: 640x640 (YOLO) or 800x800 (Faster R-CNN)
-- **Backbone**: CSPDarknet53 (YOLO) or ResNet50 (Faster R-CNN)
-- **Optimizer**: Adam or SGD
-- **Learning Rate**: 0.001 (with cosine decay)
-- **Batch Size**: 16-32
-- **Epochs**: 100-300
+- **Input Size**: 640x640 pixels
+- **Architecture**: YOLOv8n (nano) - lightweight and fast
+- **Pretrained Weights**: COCO dataset pretrained ([yolov8n.pt](yolov8n.pt))
+- **Optimizer**: Adam
+- **Learning Rate**: 0.001 with cosine decay
+- **Batch Size**: 16 (configurable)
+- **Epochs**: 100 (configurable)
+- **Image Augmentation**: Built-in YOLOv8 augmentations
+  - Random scaling
+  - Random cropping
+  - Color jittering
+  - Mosaic augmentation
+
+### Training Features
+
+- Single-class detection (Cat only)
+- Transfer learning from COCO pretrained weights
+- Automatic mixed precision (AMP) training
+- TensorBoard logging
+- Model checkpointing (best and last weights)
+- Validation during training
 
 ---
 
@@ -316,95 +381,110 @@ The model is evaluated using:
 
 ```
 cat-detection/
-├── README.md                           # Project documentation
-├── requirements.txt                    # Python dependencies
-├── download.py                         # Dataset download script
-├── train.py                           # Model training script
-├── evaluate.py                        # Model evaluation script
-├── detect.py                          # Inference script
-├── Image_+_AI_Group_11_Cat_Detection.ipynb  # Main notebook
-├── data/                              # Dataset directory
-│   ├── train/
-│   ├── val/
-│   └── test/
-├── models/                            # Model configurations
-│   ├── yolo.yaml
-│   └── faster_rcnn.yaml
-├── weights/                           # Trained model weights
-│   ├── best.pt
-│   └── last.pt
-├── results/                           # Training results and visualizations
-│   ├── plots/
-│   ├── metrics/
-│   └── reports/
-├── preprocessing/                     # Preprocessing utilities
-│   ├── quality_check.py
-│   ├── enhancement.py
-│   └── augmentation.py
-└── utils/                            # Helper functions
-    ├── dataset.py
-    ├── metrics.py
-    └── visualization.py
+├── README.md                            # Project documentation
+├── HOW_TO_TRAIN.md                     # Detailed training guide
+├── requirements.txt                     # Python dependencies
+├── pyvenv.cfg                          # Virtual environment config
+├── data.yaml                           # YOLOv8 dataset configuration
+├── dataset.yaml                        # Dataset metadata
+├── yolov8n.pt                         # YOLOv8 nano pretrained weights
+├── .gitignore                         # Git ignore rules
+│
+├── 📁 bin/                            # Python virtual environment binaries
+│   ├── python, python3               # Python interpreters
+│   ├── yolo                          # Ultralytics YOLO CLI
+│   ├── jupyter                       # Jupyter notebook
+│   └── [other tools]                # Various installed tools
+│
+├── 📁 data/                           # Dataset directory
+│   ├── original/                    # Original dataset (1502 train, 300 val, 300 test)
+│   │   ├── train/
+│   │   │   ├── images/
+│   │   │   └── labels/
+│   │   ├── val/
+│   │   │   ├── images/
+│   │   │   └── labels/
+│   │   └── test/
+│   │       ├── images/
+│   │       └── labels/
+│   └── enhanced/                    # Enhanced dataset (preprocessed images)
+│       ├── train/
+│       ├── val/
+│       └── test/
+│
+├── 📁 scripts/                        # Utility scripts
+│   ├── check_labels.py              # Label verification
+│   ├── enhance_images.py            # Image enhancement (brightness/sharpening)
+│   ├── export_from_fiftyone.py      # Dataset download from Open Images
+│   ├── find_invalid_images.py       # Find corrupted/invalid images
+│   └── visualize_single_image.py    # Visualize annotations
+│
+├── 📁 training/                       # Training scripts
+│   └── train_yolo.py                # YOLOv8 training script
+│
+├── 📁 weights/                        # Model weights (empty - generated after training)
+│   ├── best.pt                      # Best model checkpoint (after training)
+│   └── last.pt                      # Last model checkpoint (after training)
+│
+├── 📁 results/                        # Analysis and validation results
+│   ├── invalid_images/              # Corrupted image reports
+│   ├── label_check/                 # Label validation results
+│   └── visualize_*.jpg              # Visualization outputs
+│
+├── 📁 report/                         # Project report documentation
+│   └── README.md                    # Report structure guide
+│
+├── 📁 runs/                           # Training runs (auto-generated by YOLOv8)
+│   └── train/                       # Training run outputs
+│       └── cat_detection_*/         # Individual run results
+│           ├── weights/             # Model checkpoints
+│           ├── results.png          # Training metrics plot
+│           ├── confusion_matrix.png # Confusion matrix
+│           └── [other metrics]      # Performance visualizations
+│
+├── 📁 lib/                           # Python libraries (virtual environment)
+├── 📁 share/                         # Shared resources (virtual environment)
+└── 📁 etc/                           # Configuration files (virtual environment)
 ```
+
+### Key Files
+
+- **[Image\_+_AI_Group_11_Cat_Detection.ipynb](../Image_+_AI_Group_11_Cat_Detection.ipynb)**: Main Jupyter notebook (located in parent directory)
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)**: Contribution guidelines (parent directory)
+- **[IMPLEMENTATION_GUIDE.md](../IMPLEMENTATION_GUIDE.md)**: Implementation details (parent directory)
+- **[PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)**: Full structure documentation (parent directory)
+- **data.yaml**: YOLOv8 dataset configuration file
+- **requirements.txt**: All Python package dependencies
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
+We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed guidelines.
 
-### How to Contribute
+### Quick Contribution Guide
 
-1. **Fork the Repository**
-
-   ```bash
-   # Click the 'Fork' button on GitHub
-   ```
-
-2. **Clone Your Fork**
-
+1. **Fork the Repository** on GitHub
+2. **Clone Your Fork**:
    ```bash
    git clone https://github.com/YOUR_USERNAME/cat-detection.git
    cd cat-detection
    ```
-
-3. **Create a Feature Branch**
-
+3. **Create a Feature Branch**:
    ```bash
    git checkout -b feature/your-feature-name
    ```
-
-4. **Make Your Changes**
-
-   - Write clean, documented code
-   - Follow PEP 8 style guidelines
-   - Add tests if applicable
-
-5. **Commit Your Changes**
-
+4. **Make Your Changes**: Write clean, documented code following PEP 8
+5. **Commit Your Changes**:
    ```bash
    git add .
    git commit -m "Add: Brief description of your changes"
    ```
-
-6. **Push to Your Fork**
-
+6. **Push to Your Fork**:
    ```bash
    git push origin feature/your-feature-name
    ```
-
-7. **Create a Pull Request**
-   - Go to the original repository
-   - Click "New Pull Request"
-   - Describe your changes and submit
-
-### Contribution Guidelines
-
-- **Code Style**: Follow PEP 8 for Python code
-- **Documentation**: Update README.md if adding new features
-- **Testing**: Ensure all tests pass before submitting
-- **Commits**: Use clear, descriptive commit messages
-- **Issues**: Check existing issues before creating new ones
+7. **Create a Pull Request** on GitHub
 
 ### Areas for Contribution
 
@@ -415,12 +495,7 @@ We welcome contributions! Here's how you can help:
 - 🎨 **Visualization**: Enhance result visualization tools
 - ⚡ **Performance**: Optimize training and inference speed
 
-### Code of Conduct
-
-- Be respectful and inclusive
-- Provide constructive feedback
-- Help others learn and grow
-- Follow project guidelines
+For detailed guidelines, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ---
 
@@ -446,13 +521,26 @@ Sample detection results and visualizations will be added to the `results/` dire
 
 ## 🔮 Future Work
 
-- [ ] Extend to multi-class detection (cats, dogs, etc.)
+- [ ] Complete model training on both original and enhanced datasets
+- [ ] Generate comprehensive performance comparison report
+- [ ] Extend to multi-class detection (cats, dogs, birds, etc.)
 - [ ] Implement real-time detection on video streams
-- [ ] Add mobile deployment (TensorFlow Lite/ONNX)
-- [ ] Experiment with advanced architectures (YOLOv10, DETR)
-- [ ] Add data augmentation techniques (CutMix, Mosaic)
+- [ ] Add mobile deployment support (TensorFlow Lite/ONNX)
+- [ ] Experiment with larger YOLOv8 models (YOLOv8s, YOLOv8m, YOLOv8l)
+- [ ] Add advanced data augmentation techniques (CutMix, Mosaic)
 - [ ] Create web interface for easy inference
 - [ ] Implement active learning for continuous improvement
+- [ ] Add hyperparameter tuning automation
+- [ ] Deploy model as REST API
+
+---
+
+## 📚 Additional Documentation
+
+- **[HOW_TO_TRAIN.md](HOW_TO_TRAIN.md)**: Detailed training instructions and troubleshooting
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)**: Contribution guidelines
+- **[PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)**: Complete project structure documentation
+- **[report/README.md](report/README.md)**: Project report structure
 
 ---
 
