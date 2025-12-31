@@ -198,26 +198,11 @@ pip install -r requirements.txt
 python scripts/export_from_fiftyone.py
 ```
 
-This will download the Open Images dataset and organize it into the appropriate structure.
+This will download the Open Images dataset and organize it into the `data/original/` directory with train, val, and test splits.
 
-### 2. Data Preprocessing
+### 2. Data Preprocessing (Optional)
 
-#### Option A: Interactive Notebook (Recommended)
-
-Open the Jupyter notebook:
-
-```bash
-jupyter notebook Image_+_AI_Group_11_Cat_Detection.ipynb
-```
-
-Run the preprocessing cells to:
-
-- Verify annotations
-- Remove duplicates
-- Analyze image quality
-- Apply enhancements
-
-#### Option B: Command Line Scripts
+Run preprocessing scripts to analyze and enhance your dataset:
 
 ```bash
 # Check labels and annotations
@@ -235,18 +220,15 @@ python scripts/visualize_single_image.py
 
 ### 3. Train Model
 
-```bash
-# Navigate to cat-detection directory
-cd cat-detection
+**For complete training instructions, see [HOW_TO_TRAIN.md](HOW_TO_TRAIN.md)**
 
-# Train YOLO model on original dataset
-python training/train_yolo.py --data-dir ./data/original --epochs 100 --batch-size 16
+The HOW_TO_TRAIN.md file contains:
 
-# Train on enhanced dataset
-python training/train_yolo.py --data-dir ./data/enhanced --epochs 100 --batch-size 16
-```
-
-For detailed training instructions, see [HOW_TO_TRAIN.md](HOW_TO_TRAIN.md).
+- Step-by-step training commands
+- Correct data directory paths
+- Training configuration options
+- Troubleshooting common errors
+- Expected outputs and results
 
 ### 4. Evaluate Model
 
