@@ -1,0 +1,22 @@
+# YOLOv8 Dataset Configuration for Cat Detection
+# This file defines the dataset structure and classes for training
+
+# Dataset root directory (will be set automatically by training script)
+path: ./data
+
+# Train/Val/Test splits
+train: train/images
+val: val/images
+test: test/images
+
+# Number of classes
+nc: 1
+
+# Class names
+names:
+  0: Cat
+
+# Additional metadata
+description: "Single-class object detection dataset for cat detection using Open Images Dataset"
+version: "1.0"
+date: "2025-12-23"
