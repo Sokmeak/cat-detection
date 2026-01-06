@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit.components.v1 import html
 import cv2
 import numpy as np
 from pathlib import Path
@@ -18,6 +19,10 @@ if 'flagged_file' not in st.session_state:
     st.session_state.flagged_file = Path("../flagged_images.txt")
 if 'dataset_type' not in st.session_state:
     st.session_state.dataset_type = 'train'
+if 'keyboard_nav' not in st.session_state:
+    st.session_state.keyboard_nav = None
+if 'confirm_delete' not in st.session_state:
+    st.session_state.confirm_delete = False
 
 # Load existing flagged images
 if st.session_state.flagged_file.exists():
@@ -85,6 +90,22 @@ def move_to_issued(img_path, dataset_type):
     shutil.copy2(img_path, dest_path)
     return dest_path
 
+def delete_image(img_path, label_path):
+    """Delete image and its label file"""
+    deleted_files = []
+    
+    # Delete image file
+    if img_path.exists():
+        img_path.unlink()
+        deleted_files.append(str(img_path.name))
+    
+    # Delete label file
+    if label_path.exists():
+        label_path.unlink()
+        deleted_files.append(str(label_path.name))
+    
+    return deleted_files
+
 # Load image paths
 dataset_type = st.sidebar.selectbox(
     "📁 Dataset Type",
@@ -115,6 +136,45 @@ if not image_paths:
     st.error("No images found! Check the path.")
     st.stop()
 
+# Keyboard navigation handler using streamlit-keyup approach
+keyboard_script = """
+<script>
+const streamlitDoc = window.parent.document;
+
+streamlitDoc.addEventListener('keydown', function(event) {
+    const target = event.target;
+    
+    // Don't trigger if user is typing in input/textarea
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return;
+    }
+    
+    // Find all buttons in the page
+    const buttons = Array.from(streamlitDoc.querySelectorAll('button'));
+    
+    // Page Down or Right Arrow -> Next
+    if (event.key === 'PageDown' || event.key === 'ArrowRight') {
+        const nextBtn = buttons.find(btn => btn.innerText.includes('Next'));
+        if (nextBtn) {
+            event.preventDefault();
+            nextBtn.click();
+        }
+    }
+    
+    // Page Up or Left Arrow -> Previous
+    if (event.key === 'PageUp' || event.key === 'ArrowLeft') {
+        const prevBtn = buttons.find(btn => btn.innerText.includes('Previous'));
+        if (prevBtn) {
+            event.preventDefault();
+            prevBtn.click();
+        }
+    }
+});
+</script>
+"""
+
+html(keyboard_script, height=0, width=0)
+
 # Header
 st.title("🐱 Cat Detection Label Viewer")
 
@@ -133,6 +193,11 @@ with st.sidebar:
     if st.button("Go"):
         st.session_state.current_index = jump_to - 1
         st.rerun()
+    
+    st.markdown("---")
+    
+    # Keyboard shortcuts info
+    st.info("⌨️ Keyboard Shortcuts:\n- **← or Page Up** : Previous\n- **→ or Page Down** : Next")
     
     st.markdown("---")
     
@@ -284,18 +349,20 @@ else:
                     st.rerun()
 
 # Navigation and action buttons
-col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 1, 1, 1, 1])
+col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 1, 1, 1, 1, 1, 1])
 
 with col1:
     if st.button("⬅️ Previous", use_container_width=True):
         if st.session_state.current_index > 0:
             st.session_state.current_index -= 1
+            st.session_state.confirm_delete = False
             st.rerun()
 
 with col2:
     if st.button("➡️ Next", use_container_width=True):
         if st.session_state.current_index < len(image_paths) - 1:
             st.session_state.current_index += 1
+            st.session_state.confirm_delete = False
             st.rerun()
 
 with col3:
@@ -341,3 +408,33 @@ with col6:
                 st.rerun()
             except Exception as e:
                 st.error(f"Error: {e}")
+
+with col7:
+    if not st.session_state.confirm_delete:
+        if st.button("🗑️ Delete", use_container_width=True):
+            st.session_state.confirm_delete = True
+            st.rerun()
+    else:
+        if st.button("⚠️ Confirm Delete", use_container_width=True, type="primary"):
+            try:
+                deleted = delete_image(current_path, label_path)
+                # Remove from incorrect images if present
+                st.session_state.incorrect_images.discard(img_name)
+                # Save updated incorrect images
+                with open(st.session_state.flagged_file, 'w') as f:
+                    f.write('\n'.join(sorted(st.session_state.incorrect_images)))
+                
+                # Adjust current index
+                if st.session_state.current_index >= len(image_paths) - 1:
+                    st.session_state.current_index = max(0, len(image_paths) - 2)
+                
+                st.session_state.confirm_delete = False
+                st.success(f"✅ Deleted {len(deleted)} file(s)")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
+                st.session_state.confirm_delete = False
+
+# Show warning if delete is pending
+if st.session_state.confirm_delete:
+    st.warning("⚠️ Click 'Confirm Delete' again to permanently delete this image and its label!")
