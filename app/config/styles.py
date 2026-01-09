@@ -6,10 +6,10 @@ Consistent color scheme and styling for the application
 
 # Color scheme
 COLORS = {
-    'primary_dark': '#0F2854',
-    'primary_medium': '#1C4D8D',
-    'primary_light': '#4988C4',
-    'accent_light': '#BDE8F5',
+    'primary_dark': '#0F2854',      # Dark blue for headers and text
+    'primary_medium': '#1C4D8D',    # Medium blue for secondary elements
+    'primary_light': '#4988C4',     # Light blue for buttons and accents
+    'accent_light': '#BDE8F5',      # Very light blue for backgrounds
     'success_bg': '#E8F5F1',
     'neutral_bg': '#F5F5F5',
     'sidebar_bg': '#F8FBFD',

@@ -4,7 +4,30 @@ Cat Detection Streamlit Application
 Main application file
 """
 
+import os
+import sys
+import warnings
+
+# Fix PyTorch + Streamlit compatibility issue
+# Set environment variables BEFORE any imports
+os.environ['STREAMLIT_SERVER_FILE_WATCHER_TYPE'] = 'none'
+os.environ['STREAMLIT_SERVER_HEADLESS'] = 'false'
+
+# Suppress warnings from torch/streamlit interaction
+warnings.filterwarnings('ignore', category=RuntimeWarning)
+warnings.filterwarnings('ignore', message='.*torch.*')
+
 import streamlit as st
+
+# Prevent Streamlit from watching torch modules
+if hasattr(st, '_is_running_with_streamlit'):
+    try:
+        import streamlit.watcher.local_sources_watcher as watcher
+        if hasattr(watcher, '_EXCLUDED_MODULE_NAMES'):
+            watcher._EXCLUDED_MODULE_NAMES.add('torch')
+            watcher._EXCLUDED_MODULE_NAMES.add('torch.classes')
+    except Exception:
+        pass  # Silently fail if watcher structure changed
 
 # Import configuration
 from config.styles import CSS_STYLES

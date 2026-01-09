@@ -81,9 +81,8 @@ def process_image(image_source, model, conf_threshold):
     with col2:
         st.markdown("**Detection Result**")
         if annotated_image is not None:
-            # Convert BGR to RGB for display
-            annotated_image_rgb = cv2.cvtColor(annotated_image, cv2.COLOR_BGR2RGB)
-            st.image(annotated_image_rgb, use_container_width=True)
+            # YOLOv8's plot() already returns RGB, no conversion needed
+            st.image(annotated_image, use_container_width=True)
     
     # Display results
     num_cats = len(detections)
