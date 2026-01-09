@@ -117,15 +117,16 @@ def train_yolo(data_yaml, model_size='n', epochs=100, img_size=640, batch_size=1
     return results
 
 
-def evaluate_model(model_path, data_yaml, img_size=640, device=None):
+def evaluate_model(model_path, data_yaml, img_size=640, device=None, split='val'):
     """
-    Evaluate trained model on validation/test set.
+    Evaluate trained model on validation or test set.
     
     Args:
         model_path: Path to trained model weights
         data_yaml: Path to dataset YAML configuration
         img_size: Input image size
         device: Device to use for evaluation
+        split: Dataset split to evaluate on ('val' or 'test')
         
     Returns:
         Evaluation metrics
@@ -134,22 +135,23 @@ def evaluate_model(model_path, data_yaml, img_size=640, device=None):
         device = '0' if torch.cuda.is_available() else 'cpu'
     
     print("\n" + "="*50)
-    print("Model Evaluation")
+    print(f"Model Evaluation on {split.upper()} set")
     print("="*50)
     
     # Load model
     model = YOLO(model_path)
     
-    # Evaluate on validation set
+    # Evaluate on specified split
     metrics = model.val(
         data=data_yaml,
+        split=split,  # Specify which split to use
         imgsz=img_size,
         device=device,
         plots=True
     )
     
     # Print metrics
-    print("\nEvaluation Metrics:")
+    print(f"\n{split.upper()} Set Evaluation Metrics:")
     print(f"mAP@0.5: {metrics.box.map50:.4f}")
     print(f"mAP@0.5:0.95: {metrics.box.map:.4f}")
     print(f"Precision: {metrics.box.mp:.4f}")
@@ -202,6 +204,9 @@ def main():
                        help='Evaluate model after training')
     parser.add_argument('--model-path', type=str, default=None,
                        help='Path to model for evaluation (if not training)')
+    parser.add_argument('--eval-split', type=str, default='val',
+                       choices=['val', 'test'],
+                       help='Dataset split to evaluate on (val or test). Use test only for final evaluation!')
     
     args = parser.parse_args()
     
@@ -236,7 +241,8 @@ def main():
             model_path=str(best_model_path),
             data_yaml=dataset_yaml,
             img_size=args.img_size,
-            device=args.device
+            device=args.device,
+            split=args.eval_split  # Use specified split (val or test)
         )
 
 
