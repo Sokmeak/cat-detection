@@ -256,6 +256,7 @@ python training/train_yolo.py \
 - Training Original Dataset:
 
 test with 100 images first
+
 ```bash
 python ./training/train_yolo.py \
     --data-dir ./data/original \
@@ -388,24 +389,145 @@ Shows model performance:
 
 ## Model Evaluation
 
-### Evaluate After Training
+### Understanding Dataset Splits: Validation vs Test Set
+
+#### What's the Difference?
+
+**Validation Set (val/)**:
+
+- Used **during training** to monitor model performance
+- YOLOv8 automatically evaluates on validation set after each epoch
+- Helps with early stopping and hyperparameter tuning
+- Used to select the "best.pt" model (highest mAP on validation set)
+- **Purpose**: Guide training decisions and prevent overfitting
+
+**Test Set (test/)**:
+
+- Used **only after training is complete** for final evaluation
+- Should NEVER be used during training or model selection
+- Provides unbiased estimate of model performance on unseen data
+- **Purpose**: Report final model performance for research/production
+
+#### Current Setup
+
+Your dataset has three splits:
+
+- **Training**: 1,500 images (used for learning)
+- **Validation**: 300 images (used during training for monitoring)
+- **Test**: 300 images (used only for final evaluation)
+
+#### Critical Rules
+
+✅ **DO**:
+
+- Use validation set during training (automatic in YOLOv8)
+- Use test set ONLY ONCE at the very end for final evaluation
+- Report test set metrics in your final results/paper
+
+❌ **DON'T**:
+
+- Don't use test set during training
+- Don't tune hyperparameters based on test set performance
+- Don't repeatedly evaluate on test set (causes data leakage)
+
+### Evaluation During Training
+
+YOLOv8 **automatically evaluates on validation set** during training:
 
 ```bash
+python train_yolo.py \
+    --data-dir ../data \
+    --model-size s \
+    --epochs 100
+```
+
+The training process:
+
+1. Trains on training set
+2. After each epoch, evaluates on **validation set**
+3. Saves "best.pt" based on **validation mAP**
+4. Generates validation metrics and plots
+
+You'll see output like:
+
+```
+Epoch    GPU_mem   box_loss   cls_loss   dfl_loss  Instances       Size
+  1/100      4.2G      1.234      0.567      1.234         64        640: 100%|██
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95)
+                   all        300        450      0.812      0.756      0.834     0.612
+```
+
+### Final Evaluation on Test Set
+
+**ONLY after training is complete**, evaluate on the test set:
+
+```bash
+# Option 1: Using train_yolo.py
 python train_yolo.py \
     --data-dir ../data \
     --model-path runs/train/cat_detection/weights/best.pt \
     --evaluate
 ```
 
+**IMPORTANT**: The current `evaluate_model()` function evaluates on **validation set**, not test set!
+
+### Proper Test Set Evaluation
+
+To evaluate on the test set, use YOLOv8 directly:
+
+```python
+from ultralytics import YOLO
+
+# Load your trained model
+model = YOLO('runs/train/cat_detection/weights/best.pt')
+
+# Evaluate on TEST set (not validation)
+metrics = model.val(
+    data='dataset.yaml',
+    split='test',  # Explicitly use test set
+    imgsz=640
+)
+
+print(f"Test Set Results:")
+print(f"mAP@0.5: {metrics.box.map50:.4f}")
+print(f"mAP@0.5:0.95: {metrics.box.map:.4f}")
+print(f"Precision: {metrics.box.mp:.4f}")
+print(f"Recall: {metrics.box.mr:.4f}")
+```
+
+Or via command line:
+
+```bash
+yolo detect val \
+    model=runs/train/cat_detection/weights/best.pt \
+    data=dataset.yaml \
+    split=test \
+    imgsz=640
+```
+
 ### Evaluation Metrics Output
 
+**Validation Set** (during training):
+
 ```
-Evaluation Metrics:
+Validation Metrics (Epoch 100):
 mAP@0.5: 0.8764
 mAP@0.5:0.95: 0.6543
 Precision: 0.8234
 Recall: 0.7891
 ```
+
+**Test Set** (final evaluation):
+
+```
+Test Set Metrics:
+mAP@0.5: 0.8512
+mAP@0.5:0.95: 0.6321
+Precision: 0.8156
+Recall: 0.7743
+```
+
+**Note**: Test set metrics are typically slightly lower than validation metrics.
 
 ### Using the Trained Model
 
@@ -445,6 +567,166 @@ yolo detect predict \
     save=True
 ```
 
+### Using Multiple Models (Original vs Enhanced)
+
+If you trained two models - one on the original dataset and one on the enhanced dataset - here's how to use both:
+
+#### Python - Using Both Models Separately
+
+```python
+from ultralytics import YOLO
+
+# Load both models
+model_original = YOLO('runs/train/cat_original/weights/best.pt')
+model_enhanced = YOLO('runs/train/cat_enhanced/weights/best.pt')
+
+# Test on a single image
+test_image = 'path/to/test_image.jpg'
+
+# Predict with original model
+results_original = model_original(test_image)
+print("Original Model Results:")
+for box in results_original[0].boxes:
+    conf = box.conf[0]
+    print(f"  Confidence: {conf:.2f}")
+
+# Predict with enhanced model
+results_enhanced = model_enhanced(test_image)
+print("Enhanced Model Results:")
+for box in results_enhanced[0].boxes:
+    conf = box.conf[0]
+    print(f"  Confidence: {conf:.2f}")
+```
+
+#### Python - Comparing Both Models
+
+```python
+from ultralytics import YOLO
+import os
+
+# Load both models
+model_original = YOLO('runs/train/cat_original/weights/best.pt')
+model_enhanced = YOLO('runs/train/cat_enhanced/weights/best.pt')
+
+# Test on multiple images
+test_images_folder = 'path/to/test_images/'
+test_images = [os.path.join(test_images_folder, img)
+               for img in os.listdir(test_images_folder)
+               if img.endswith(('.jpg', '.jpeg', '.png'))]
+
+# Compare results
+for img_path in test_images:
+    print(f"\nTesting: {os.path.basename(img_path)}")
+
+    # Original model
+    results_orig = model_original(img_path, conf=0.25)
+    num_detections_orig = len(results_orig[0].boxes)
+    avg_conf_orig = sum([box.conf[0] for box in results_orig[0].boxes]) / num_detections_orig if num_detections_orig > 0 else 0
+
+    # Enhanced model
+    results_enh = model_enhanced(img_path, conf=0.25)
+    num_detections_enh = len(results_enh[0].boxes)
+    avg_conf_enh = sum([box.conf[0] for box in results_enh[0].boxes]) / num_detections_enh if num_detections_enh > 0 else 0
+
+    print(f"  Original: {num_detections_orig} cats, avg conf: {avg_conf_orig:.2f}")
+    print(f"  Enhanced: {num_detections_enh} cats, avg conf: {avg_conf_enh:.2f}")
+```
+
+#### Python - Ensemble Prediction (Use Both Models Together)
+
+```python
+from ultralytics import YOLO
+import numpy as np
+
+def ensemble_predict(image_path, models, conf_threshold=0.25):
+    """
+    Use multiple models and combine their predictions
+    """
+    all_boxes = []
+
+    for model in models:
+        results = model(image_path, conf=conf_threshold)
+        for box in results[0].boxes:
+            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+            conf = float(box.conf[0])
+            all_boxes.append({
+                'bbox': [x1, y1, x2, y2],
+                'confidence': conf
+            })
+
+    return all_boxes
+
+# Load both models
+models = [
+    YOLO('runs/train/cat_original/weights/best.pt'),
+    YOLO('runs/train/cat_enhanced/weights/best.pt')
+]
+
+# Run ensemble prediction
+image = 'path/to/image.jpg'
+detections = ensemble_predict(image, models, conf_threshold=0.25)
+
+print(f"Total detections from both models: {len(detections)}")
+for i, det in enumerate(detections):
+    print(f"  Detection {i+1}: Confidence {det['confidence']:.2f}")
+```
+
+#### Command Line - Using Specific Models
+
+```bash
+# Use original model
+yolo detect predict \
+    model=runs/train/cat_original/weights/best.pt \
+    source=path/to/images \
+    conf=0.25 \
+    save=True \
+    project=results \
+    name=original_predictions
+
+# Use enhanced model
+yolo detect predict \
+    model=runs/train/cat_enhanced/weights/best.pt \
+    source=path/to/images \
+    conf=0.25 \
+    save=True \
+    project=results \
+    name=enhanced_predictions
+```
+
+#### Which Model to Use?
+
+**Use Original Model When:**
+
+- Faster inference is needed (if trained on smaller dataset)
+- Testing on similar data distribution as original training set
+- Resource-constrained deployment
+
+**Use Enhanced Model When:**
+
+- Maximum accuracy is needed
+- Testing on diverse/challenging images
+- Images have augmentations similar to enhanced training set
+
+**Compare Both When:**
+
+- Evaluating model improvements
+- Determining which performs better on your specific use case
+- Creating research/academic reports
+
+#### Typical Model Path Structure
+
+```
+runs/train/
+├── cat_original/
+│   └── weights/
+│       ├── best.pt
+│       └── last.pt
+└── cat_enhanced/
+    └── weights/
+        ├── best.pt
+        └── last.pt
+```
+
 ---
 
 ## Tips and Best Practices
@@ -464,10 +746,14 @@ yolo detect predict \
    - Recommended: 1000+ images per class
    - Ideal: 5000+ images per class
 
-3. **Train/Val Split**
+3. **Train/Val/Test Split**
 
-   - Standard: 80% train / 20% validation
-   - Alternative: 70% train / 20% validation / 10% test
+   - **Current project**: 1500 train / 300 val / 300 test (~75%/12.5%/12.5%)
+   - Standard: 80% train / 20% validation (no test set)
+   - Recommended: 70% train / 15% validation / 15% test
+   - Alternative: 80% train / 10% validation / 10% test
+
+   **Important**: Test set is optional but recommended for research/academic projects
 
 4. **Hardware Optimization**
    - Monitor GPU memory usage
@@ -590,6 +876,43 @@ Train loss << Validation loss
 ---
 
 ## Quick Reference
+
+### Complete Workflow Summary
+
+```bash
+# 1. TRAINING (uses train + validation sets)
+python training/train_yolo.py \
+    --data-dir ./data/original \
+    --model-size s \
+    --epochs 100 \
+    --batch-size 16
+
+# Training automatically:
+# - Trains on training set
+# - Evaluates on VALIDATION set each epoch
+# - Saves best model based on validation mAP
+
+# 2. VALIDATION SET EVALUATION (during development)
+# Check validation metrics from training logs or:
+python training/evaluate_model.py \
+    --model runs/train/cat_detection/weights/best.pt \
+    --data dataset.yaml \
+    --split val
+
+# 3. TEST SET EVALUATION (ONLY ONCE at the end!)
+python training/evaluate_model.py \
+    --model runs/train/cat_detection/weights/best.pt \
+    --data dataset.yaml \
+    --split test
+```
+
+### When to Use Each Dataset Split
+
+| Split          | When to Use                   | Purpose                                | How Often               |
+| -------------- | ----------------------------- | -------------------------------------- | ----------------------- |
+| **Training**   | During model training         | Learn patterns                         | Every epoch             |
+| **Validation** | During training & development | Monitor performance, select best model | Every epoch + as needed |
+| **Test**       | After all training is done    | Report final performance               | ONCE only               |
 
 ### Recommended Configurations
 

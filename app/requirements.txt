@@ -1,0 +1,18 @@
+# Streamlit Cat Detection App Requirements
+# ==========================================
+
+# Web Framework
+streamlit>=1.29.0
+
+# Deep Learning
+ultralytics>=8.0.0
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Image Processing
+opencv-python>=4.8.0
+pillow>=10.0.0
+numpy>=1.24.0
+
+# Optional: For better performance
+# opencv-python-headless>=4.8.0  # Use this instead of opencv-python for headless servers
