@@ -82,3 +82,39 @@ def get_model_info(model_path):
         info['size_mb'] = f"{size_mb:.1f}"
     
     return info
+
+
+def load_test_metrics(model_path):
+    """
+    Load test set metrics from test_set_metrics.txt if available
+    
+    Args:
+        model_path: Path to the model weights (best.pt)
+        
+    Returns:
+        Dictionary with test metrics or None if not available
+    """
+    metrics_file = Path(model_path).parent / "test_set_metrics.txt"
+    
+    if not metrics_file.exists():
+        return None
+    
+    metrics = {}
+    try:
+        with open(metrics_file, 'r') as f:
+            content = f.read()
+            
+        # Parse metrics from file
+        for line in content.split('\n'):
+            if 'mAP@0.5      :' in line:
+                metrics['map50'] = float(line.split(':')[1].strip())
+            elif 'mAP@0.5:0.95 :' in line:
+                metrics['map50_95'] = float(line.split(':')[1].strip())
+            elif 'Precision    :' in line:
+                metrics['precision'] = float(line.split(':')[1].strip())
+            elif 'Recall       :' in line:
+                metrics['recall'] = float(line.split(':')[1].strip())
+                
+        return metrics if metrics else None
+    except Exception as e:
+        return None

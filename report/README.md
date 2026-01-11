@@ -78,30 +78,82 @@ Your report should include the following sections:
 
 ### 7. Results
 
-#### 7.1 Dataset Statistics
+#### 7.1 Understanding the Training Process
+
+**Why Training and Validation Together?**
+
+When training a machine learning model, we use two datasets simultaneously:
+
+- **Training Set**: The model learns patterns from this data by adjusting its internal parameters to recognize cats
+- **Validation Set**: We check performance on unseen data during training to:
+  - Monitor if the model is overfitting (memorizing instead of learning)
+  - Decide when to stop training (early stopping)
+  - Choose the best model configuration
+  - Track if the model is learning useful features
+
+Think of it like studying for an exam: training is reading the textbook, validation is solving practice problems to check if you truly understand.
+
+**Why Testing After Training?**
+
+- **Test Set**: A completely separate dataset never seen during training or validation
+- **Purpose**: Get unbiased evaluation of how the model performs on real-world data
+- The test set represents how well your model will work in the actual application
+
+**Understanding Key Metrics**:
+
+1. **Precision**: Of all detected cats, how many were actually cats? (fewer false alarms)
+2. **Recall**: Of all actual cats, how many did we detect? (catches most cats)
+3. **mAP@0.5**: Accuracy when bounding box overlaps real position by at least 50%
+4. **mAP@0.5:0.95**: Stricter metric requiring more precise bounding boxes (industry standard)
+
+#### 7.2 Dataset Statistics
 
 - Number of images per split
 - Quality analysis results
 - Enhancement impact
 
-#### 7.2 Training Results
+#### 7.3 Training Results
 
 - Training curves (loss, metrics)
 - Convergence analysis
 - Training time
 
-#### 7.3 Model Performance
+#### 7.4 Model Performance Comparison
 
-**Table: Comparison of Original vs Enhanced Dataset**
+**Final Training Results (After 100 Epochs)**:
 
-| Metric         | Original Dataset | Enhanced Dataset | Improvement |
-| -------------- | ---------------- | ---------------- | ----------- |
-| mAP@0.5        | TBD              | TBD              | TBD         |
-| mAP@0.5:0.95   | TBD              | TBD              | TBD         |
-| Precision      | TBD              | TBD              | TBD         |
-| Recall         | TBD              | TBD              | TBD         |
-| F1-Score       | TBD              | TBD              | TBD         |
-| Inference Time | TBD              | TBD              | TBD         |
+| Metric       | Original Model | Enhanced Model | Difference |
+| ------------ | -------------- | -------------- | ---------- |
+| mAP@0.5      | 94.16%         | 93.46%         | -0.70%     |
+| mAP@0.5:0.95 | 78.92%         | 78.17%         | -0.75%     |
+| Precision    | 93.57%         | 96.45%         | +2.88%     |
+| Recall       | 90.71%         | 88.62%         | -2.09%     |
+
+**Interpretation**:
+
+- **Original Model**: Balanced performance with high recall - catches most cats with good precision
+
+  - Best when missing a cat is worse than false detections
+  - Slightly better overall accuracy (mAP)
+
+- **Enhanced Model**: Higher precision but lower recall - fewer false alarms but might miss some cats
+  - Best when false alarms are costly
+  - More confident predictions
+
+**Which Model for Application?**
+
+_Choose Original Model if_: You need to detect as many cats as possible (e.g., wildlife monitoring)
+
+_Choose Enhanced Model if_: You need highly confident detections with fewer false alarms (e.g., automated pet doors)
+
+Both models perform well (>78% strict accuracy, >93% standard accuracy). The choice depends on whether you prioritize catching all cats (recall) or avoiding false alarms (precision).
+
+#### 7.5 Qualitative Analysis
+
+| Precision | TBD | TBD | TBD |
+| Recall | TBD | TBD | TBD |
+| F1-Score | TBD | TBD | TBD |
+| Inference Time | TBD | TBD | TBD |
 
 #### 7.4 Qualitative Analysis
 

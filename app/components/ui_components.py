@@ -96,7 +96,7 @@ def render_model_selector(available_models):
     Returns:
         Tuple of (model_name, model_path)
     """
-    from utils.file_utils import get_model_info
+    from utils.file_utils import get_model_info, load_test_metrics
     
     st.sidebar.markdown("**Model Selection**")
     model_name = st.sidebar.selectbox(
@@ -110,27 +110,42 @@ def render_model_selector(available_models):
     
     # Display model info
     model_info = get_model_info(model_path)
+    test_metrics = load_test_metrics(model_path)
     
     st.sidebar.markdown(f"**Active Model:** `{model_name}`")
     
+    # Show test metrics if available
+    if test_metrics:
+        with st.sidebar.expander("🎯 Test Set Performance", expanded=True):
+            st.caption("_Final evaluation on unseen data_")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("mAP@50", f"{test_metrics['map50']:.1%}")
+                st.metric("Precision", f"{test_metrics['precision']:.1%}")
+            with col2:
+                st.metric("mAP@50-95", f"{test_metrics['map50_95']:.1%}")
+                st.metric("Recall", f"{test_metrics['recall']:.1%}")
+    
+    # Show training/validation metrics
     if model_info:
-        with st.sidebar.expander("📊 Model Details", expanded=False):
+        with st.sidebar.expander("📊 Training Details", expanded=False):
             if 'epochs_trained' in model_info:
                 st.metric("Epochs", model_info['epochs_trained'])
             
             if 'final_map50' in model_info:
+                st.caption("_Validation set metrics_")
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("mAP@50", f"{model_info['final_map50']:.2%}")
+                    st.metric("Val mAP@50", f"{model_info['final_map50']:.2%}")
                 with col2:
-                    st.metric("mAP@50-95", f"{model_info['final_map50_95']:.2%}")
+                    st.metric("Val mAP@50-95", f"{model_info['final_map50_95']:.2%}")
             
             if 'precision' in model_info and 'recall' in model_info:
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("Precision", f"{model_info['precision']:.2%}")
+                    st.metric("Val Precision", f"{model_info['precision']:.2%}")
                 with col2:
-                    st.metric("Recall", f"{model_info['recall']:.2%}")
+                    st.metric("Val Recall", f"{model_info['recall']:.2%}")
             
             if 'size_mb' in model_info:
                 st.caption(f"Model size: {model_info['size_mb']} MB")
