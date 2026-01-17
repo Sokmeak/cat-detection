@@ -104,6 +104,7 @@ This project develops and evaluates a **single-class object detection system** f
 - **Virtual Environment**: Pre-configured Python environment with all dependencies
 - **Interactive Notebooks**: Jupyter notebook for experimentation and analysis
 - **Dual Dataset Support**: Train on original or enhanced datasets for comparison
+- **🎨 Streamlit Web App**: User-friendly web interface for real-time cat detection with webcam support
 
 ---
 
@@ -121,7 +122,7 @@ This project develops and evaluates a **single-class object detection system** f
 #### 1. Clone the Repository (if needed)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/cat-detection.git
+git clone https://github.com/Sokmeak/cat-detection.git
 cd cat-detection
 ```
 
@@ -252,6 +253,29 @@ yolo predict model=weights/best.pt source=0
 # Run on video
 yolo predict model=weights/best.pt source=path/to/video.mp4
 ```
+
+### 6. Use the Streamlit Web App 🎨
+
+**Launch the interactive web application for easy cat detection:**
+
+```bash
+# From the project root directory
+streamlit run app/cat_detection_app.py
+
+# Or navigate to the app directory
+cd app
+streamlit run cat_detection_app.py
+```
+
+The app provides:
+
+- 📤 **Image Upload**: Detect cats in uploaded images (JPG, PNG, BMP)
+- 📷 **Webcam Capture**: Real-time detection using your webcam
+- 🎯 **Adjustable Confidence**: Control detection sensitivity (0.0-1.0)
+- 🔄 **Model Selection**: Switch between different trained models
+- 📊 **Detection Details**: View bounding boxes, confidence scores, and coordinates
+
+**See [app/README.md](app/README.md) for detailed app documentation.**
 
 ---
 
@@ -404,6 +428,19 @@ cat-detection/
 ├── 📁 training/                       # Training scripts
 │   └── train_yolo.py                # YOLOv8 training script
 │
+├── 📁 app/                            # Streamlit web application 🎨
+│   ├── cat_detection_app.py         # Main Streamlit app
+│   ├── README.md                    # App documentation
+│   ├── requirements.txt             # App dependencies
+│   ├── .streamlit/                  # Streamlit configuration
+│   ├── components/                  # UI components
+│   │   ├── detection_view.py       # Detection display logic
+│   │   └── ui_components.py        # Reusable UI elements
+│   ├── config/                      # App configuration
+│   └── utils/                       # App utilities
+│       ├── file_utils.py           # File handling
+│       └── model_utils.py          # Model loading/inference
+│
 ├── 📁 weights/                        # Model weights (empty - generated after training)
 │   ├── best.pt                      # Best model checkpoint (after training)
 │   └── last.pt                      # Last model checkpoint (after training)
@@ -476,6 +513,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for d
 - 🧪 **Testing**: Add unit tests and integration tests
 - 🎨 **Visualization**: Enhance result visualization tools
 - ⚡ **Performance**: Optimize training and inference speed
+- 🌐 **Web App**: Enhance the Streamlit interface with new features
 
 For detailed guidelines, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
@@ -505,12 +543,12 @@ Sample detection results and visualizations will be added to the `results/` dire
 
 - [ ] Complete model training on both original and enhanced datasets
 - [ ] Generate comprehensive performance comparison report
+- [x] Create web interface for easy inference (**Streamlit app completed!** 🎉)
 - [ ] Extend to multi-class detection (cats, dogs, birds, etc.)
 - [ ] Implement real-time detection on video streams
 - [ ] Add mobile deployment support (TensorFlow Lite/ONNX)
 - [ ] Experiment with larger YOLOv8 models (YOLOv8s, YOLOv8m, YOLOv8l)
 - [ ] Add advanced data augmentation techniques (CutMix, Mosaic)
-- [ ] Create web interface for easy inference
 - [ ] Implement active learning for continuous improvement
 - [ ] Add hyperparameter tuning automation
 - [ ] Deploy model as REST API
@@ -520,6 +558,7 @@ Sample detection results and visualizations will be added to the `results/` dire
 ## 📚 Additional Documentation
 
 - **[HOW_TO_TRAIN.md](HOW_TO_TRAIN.md)**: Detailed training instructions and troubleshooting
+- **[app/README.md](app/README.md)**: Streamlit web application documentation
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)**: Contribution guidelines
 - **[PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)**: Complete project structure documentation
 - **[report/README.md](report/README.md)**: Project report structure

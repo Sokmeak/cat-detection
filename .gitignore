@@ -80,7 +80,6 @@ checkpoints/
 
 # Logs and results
 logs/
-runs/
 results/
 experiments/
 *.log
